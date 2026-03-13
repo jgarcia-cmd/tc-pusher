@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TC Pusher v3</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090f;
+  --s1: #0f1020;
+  --s2: #161728;
+  --border: #1f2140;
+  --accent: #6c8aff;
+  --accent2: #a78bfa;
+  --green: #34d399;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --text: #e8eaf6;
+  --text2: #8b8fa8;
+  --text3: #3d4060;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Syne',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(108,138,255,0.08),transparent);pointer-events:none;z-index:0;}
+
+.wrap{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:48px 24px;}
+
+/* Header */
+.hdr{margin-bottom:40px;}
+.hdr-tag{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.hdr-tag::before{content:'';width:24px;height:1px;background:var(--accent);}
+.hdr h1{font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1.1;}
+.hdr h1 em{font-style:normal;color:var(--accent);}
+.hdr p{color:var(--text2);font-size:14px;margin-top:10px;line-height:1.6;}
+.how-to{background:var(--s1);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:0 8px 8px 0;padding:14px 18px;margin-top:16px;font-size:13px;color:var(--text2);line-height:1.8;}
+.how-to strong{color:var(--text);display:block;margin-bottom:4px;}
+
+/* Cards */
+.card{background:var(--s1);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:14px;}
+.card-title{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:18px;display:flex;align-items:center;gap:10px;}
+.card-title::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Form */
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;}
+.field input{width:100%;padding:10px 14px;background:var(--s2);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);font-family:'JetBrains Mono',monospace;transition:border-color .2s,box-shadow .2s;}
+.field input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,138,255,.12);}
+.field input::placeholder{color:var(--text3);}
+
+/* Upload */
+.upload{border:2px dashed var(--border);border-radius:10px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;position:relative;margin-top:0;}
+.upload:hover,.upload.over{border-color:var(--accent);background:rgba(108,138,255,.05);}
+.upload input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;}
+.upload-icon{font-size:28px;margin-bottom:8px;}
+.upload p{font-size:13px;color:var(--text2);}
+.upload .fname{color:var(--accent);font-weight:700;font-size:13px;margin-top:6px;font-family:'JetBrains Mono',monospace;}
+
+/* Button */
+.btn{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),#4f6ef7);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'Syne',sans-serif;letter-spacing:.3px;margin-top:14px;transition:all .2s;position:relative;overflow:hidden;}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.1));opacity:0;transition:opacity .2s;}
+.btn:hover:not(:disabled)::before{opacity:1;}
+.btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 28px rgba(108,138,255,.35);}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;}
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.stat .n{font-size:26px;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.stat .l{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
+.stat.blue .n{color:var(--accent);}
+.stat.green .n{color:var(--green);}
+.stat.red .n{color:var(--red);}
+
+/* Progress */
+.prog{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-bottom:12px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:2px;transition:width .4s ease;width:0%;}
+
+/* Log */
+.log{background:#060710;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;max-height:240px;overflow-y:auto;line-height:1.8;}
+.log::-webkit-scrollbar{width:3px;}
+.log::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.log .s{color:var(--green);}
+.log .e{color:var(--red);}
+.log .i{color:var(--accent);}
+.log .d{color:var(--text3);}
+.log .w{color:var(--yellow);}
+
+/* Tree */
+.tree-plan{background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);border-radius:8px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;}
+.tree-plan-name{font-weight:700;color:var(--accent2);font-size:13px;}
+.tree-plan-id{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text3);}
+.tree-suite{border-left:2px solid var(--border);margin-left:14px;margin-bottom:6px;padding-left:14px;}
+.tree-suite-hdr{background:var(--s2);border-radius:6px;padding:8px 12px;font-size:12px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:2px;}
+.tree-tc{padding:5px 12px;font-size:11px;color:var(--text2);border-bottom:1px solid rgba(31,33,64,.5);display:flex;justify-content:space-between;align-items:center;}
+.tree-tc:last-child{border:none;}
+.tc-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:10px;font-weight:700;margin-right:7px;}
+.tp{background:rgba(52,211,153,.12);color:var(--green);}
+.tn{background:rgba(248,113,113,.12);color:var(--red);}
+.te{background:rgba(251,191,36,.12);color:var(--yellow);}
+.tc-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);}
+
+.ado-link{display:inline-flex;align-items:center;gap:8px;margin-top:14px;padding:10px 20px;background:rgba(108,138,255,.1);border:1px solid rgba(108,138,255,.25);border-radius:8px;color:var(--accent);font-size:13px;font-weight:700;text-decoration:none;transition:all .2s;}
+.ado-link:hover{background:rgba(108,138,255,.2);}
+
+.warn{background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:8px;padding:12px 16px;font-size:13px;color:var(--yellow);margin-bottom:14px;line-height:1.6;}
+.warn strong{display:block;margin-bottom:2px;}
+
+.hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="hdr-tag">TC Pusher v3</div>
+    <h1>Test Case <em>Auto-Pusher</em></h1>
+    <p>Upload your CSV, enter Plan details, click Push — suites and test cases created automatically.</p>
+    <div class="how-to">
+      <strong>⚠️ Important: Open this file in the same browser where you're logged in to Azure DevOps!</strong>
+      No PAT needed — it uses your existing ADO session automatically.
+    </div>
+  </div>
+
+  <!-- ADO Config -->
+  <div class="card">
+    <div class="card-title">⚙️ ADO Config</div>
+    <div class="row">
+      <div class="field">
+        <label>Organization URL</label>
+        <input id="orgUrl" placeholder="https://dev.azure.com/your-org" />
+      </div>
+      <div class="field">
+        <label>Project Name</label>
+        <input id="project" placeholder="My Project" />
+      </div>
+      <div class="field">
+        <label>Test Plan ID</label>
+        <input id="planId" placeholder="e.g. 204" />
+      </div>
+      <div class="field">
+        <label>Parent Suite ID</label>
+        <input id="parentSuiteId" placeholder="e.g. 205" />
+      </div>
+    </div>
+  </div>
+
+  <!-- CSV Upload -->
+  <div class="card">
+    <div class="card-title">📄 User Stories CSV</div>
+    <div class="upload" id="uploadZone">
+      <input type="file" id="csvFile" accept=".csv" onchange="handleFile(this)" />
+      <div class="upload-icon">📂</div>
+      <p>Drop CSV here or click to browse</p>
+      <div class="fname" id="fileName">No file selected</div>
+    </div>
+    <button class="btn" id="pushBtn" onclick="startPush()" disabled>🚀 Generate Test Cases + Push to ADO</button>
+  </div>
+
+  <!-- Progress -->
+  <div class="hidden" id="progressSection">
+    <div class="stats">
+      <div class="stat blue"><div class="n" id="s-suites">0</div><div class="l">Suites</div></div>
+      <div class="stat green"><div class="n" id="s-created">0</div><div class="l">TC Created</div></div>
+      <div class="stat red"><div class="n" id="s-failed">0</div><div class="l">Failed</div></div>
+    </div>
+    <div class="prog"><div class="prog-fill" id="progFill"></div></div>
+    <div class="log" id="logBox"></div>
+  </div>
+
+  <!-- Tree -->
+  <div class="card hidden" id="treeCard">
+    <div class="card-title">🌳 Result</div>
+    <div id="treeView"></div>
+    <div id="adoLinkBox"></div>
+  </div>
+
+</div>
+
+<script>
+let parsedStories = [];
+let suiteMap = {}, tcIdMap = [], createdCount = 0, failedCount = 0, linkedCount = 0;
+
+// ── File Handling ──────────────────────────────────────────────────────
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    parsedStories = parseCSV(e.target.result);
+    document.getElementById('fileName').textContent =
+      parsedStories.length > 0
+        ? `✅ ${file.name} — ${parsedStories.length} User Stories detected`
+        : `❌ Could not parse ${file.name}`;
+    document.getElementById('pushBtn').disabled = parsedStories.length === 0;
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text) {
+  const lines = text.split('\n');
+  const headers = parseLine(lines[0]);
+  const stories = {};
+  lines.slice(1).filter(l => l.trim()).forEach(row => {
+    const cols = parseLine(row);
+    const obj = {};
+    headers.forEach((h, i) => obj[h.trim().replace(/"/g, '')] = (cols[i] || '').trim().replace(/^"|"$/g, ''));
+    const id = obj['ID'];
+    if (!id) return;
+    if (!stories[id]) stories[id] = { id, title: obj['Title'], acs: [] };
+    if (obj['AC# | Path Type']) stories[id].acs.push({
+      ac: obj['AC# | Path Type'], sc: obj['Scenario'],
+      gv: obj['Given'], wh: obj['When'], th: obj['Then']
+    });
+  });
+  return Object.values(stories);
+}
+
+function parseLine(line) {
+  const res = []; let cur = ''; let inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (c === '"') { inQ = !inQ; }
+    else if (c === ',' && !inQ) { res.push(cur); cur = ''; }
+    else cur += c;
+  }
+  res.push(cur);
+  return res;
+}
+
+// ── TC Generation ──────────────────────────────────────────────────────
+function generateTCs(stories) {
+  const all = {};
+  stories.forEach(us => {
+    all[us.id] = [];
+    const used = {};
+    us.acs.forEach(ac => {
+      const sc = ac.sc||'', gv = ac.gv||'', wh = ac.wh||'', th = ac.th||'';
+      const isH = ac.ac.includes('Happy'), isF = ac.ac.includes('Fail');
+      const n = parseInt((ac.ac.match(/\d+/)||[1])[0]);
+      const lf = s => s ? s.charAt(0).toLowerCase() + s.slice(1) : s;
+      const mk = (t, u) => { let r = t.length > 120 ? t.substring(0,117)+'...' : t, b = r, i = 2; while(u[r]) r = b+' ('+(i++)+')'; u[r]=1; return r; };
+
+      // Positive
+      all[us.id].push({
+        type: 'Positive',
+        title: mk('Verify that ' + lf((th.split(',')[0]||'').trim().replace(/^the /,'')), used),
+        steps: [
+          'Navigate to the feature: ' + sc,
+          'Ensure the precondition is met: ' + gv,
+          'Perform the action: ' + wh,
+          'Observe the result and verify the system behavior'
+        ],
+        exp: th
+      });
+
+      // Negative
+      all[us.id].push({
+        type: 'Negative',
+        title: mk(isH ? 'Verify that an error is handled gracefully when ' + lf(sc)
+          : isF ? 'Verify that the system notifies the user when ' + lf(sc)
+          : 'Verify that invalid input is rejected when ' + lf(sc), used),
+        steps: isH
+          ? ['Navigate to the feature: '+sc, 'Set up the precondition: '+gv, 'Trigger an unexpected error or invalid state while performing: '+wh, 'Observe the system response and any error messages displayed']
+          : isF
+          ? ['Navigate to the feature: '+sc, 'Set up the precondition: '+gv, 'Simulate the failure condition: '+wh, 'Check that no fallback is silently applied', 'Observe the error message and system state']
+          : ['Navigate to the feature: '+sc, 'Set up the precondition: '+gv, 'Enter an invalid or empty value where valid input is expected', 'Attempt to proceed with the action', 'Observe the validation feedback'],
+        exp: isH ? 'An appropriate error message is displayed. The system does not crash or lose data and remains in a usable state'
+          : isF ? 'The user is clearly notified of the failure. No silent failure occurs and the system remains stable'
+          : 'The system rejects the invalid input and displays a clear validation error. No invalid data is saved or processed'
+      });
+
+      // Edge Case
+      const edgeTitles = [
+        'Verify that the system handles boundary conditions correctly during ' + lf(sc),
+        'Verify that concurrent actions do not cause inconsistency during ' + lf(sc),
+        'Verify that the system recovers correctly after an interruption during ' + lf(sc)
+      ];
+      const edgeSteps = [
+        ['Navigate to the feature: '+sc, 'Set up the precondition: '+gv, 'Set the input or state to its minimum or maximum boundary value', 'Perform the action: '+wh, 'Observe the system behavior and output'],
+        ['Navigate to the feature: '+sc, 'Set up the precondition: '+gv, 'Initiate the action: '+wh, 'Simultaneously trigger another related action before the first completes', 'Observe the final state after both actions complete'],
+        ['Navigate to the feature: '+sc, 'Set up the precondition: '+gv, 'Begin performing the action: '+wh, 'Interrupt mid-way such as a page refresh or timeout', 'Reopen or resume and observe the system state']
+      ];
+      const edgeExp = [
+        'The system correctly handles the boundary value without errors or unexpected behavior. ' + th,
+        'Both actions complete without conflict or data corruption. The system reflects a consistent and accurate final state',
+        'The system restores to a valid state after the interruption. No data is lost and the user can continue without errors'
+      ];
+      all[us.id].push({
+        type: 'Edge Case',
+        title: mk(edgeTitles[n%3], used),
+        steps: edgeSteps[n%3],
+        exp: edgeExp[n%3]
+      });
+    });
+  });
+  return all;
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────
+function escX(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function buildXml(steps, exp) {
+  let x = `<steps id="0" last="${steps.length+1}">`;
+  steps.forEach((s,i) => x += `<step id="${i+1}" type="ActionStep"><parameterizedString isformatted="true">${escX(s)}</parameterizedString><parameterizedString isformatted="true"></parameterizedString></step>`);
+  x += `<step id="${steps.length+1}" type="ValidateStep"><parameterizedString isformatted="true">Verify the expected result</parameterizedString><parameterizedString isformatted="true">${escX(exp)}</parameterizedString></step></steps>`;
+  return x;
+}
+function log(msg, t='i') {
+  const box = document.getElementById('logBox');
+  const d = document.createElement('div'); d.className = t;
+  d.textContent = new Date().toLocaleTimeString('en-US',{hour12:false}) + '  ' + msg;
+  box.appendChild(d); box.scrollTop = box.scrollHeight;
+}
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function updateStats() {
+  document.getElementById('s-suites').textContent = Object.keys(suiteMap).length;
+  document.getElementById('s-created').textContent = createdCount;
+  document.getElementById('s-failed').textContent = failedCount;
+  const total = Object.values(generateTCs(parsedStories)).flat().length || 1;
+  document.getElementById('progFill').style.width = Math.min(100, Math.round((createdCount+failedCount)/total*100)) + '%';
+}
+
+// ── Main Push ──────────────────────────────────────────────────────────
+async function startPush() {
+  const orgUrl = document.getElementById('orgUrl').value.trim().replace(/\/$/,'');
+  const project = document.getElementById('project').value.trim();
+  const planId = document.getElementById('planId').value.trim();
+  const parentId = parseInt(document.getElementById('parentSuiteId').value.trim());
+
+  if (!orgUrl || !project || !planId || !parentId) {
+    alert('Please fill in all fields!'); return;
+  }
+
+  const btn = document.getElementById('pushBtn');
+  btn.disabled = true; btn.textContent = '⏳ Running...';
+  suiteMap = {}; tcIdMap = []; createdCount = 0; failedCount = 0; linkedCount = 0;
+
+  document.getElementById('progressSection').classList.remove('hidden');
+  document.getElementById('treeCard').classList.add('hidden');
+
+  const base = `${orgUrl}/${encodeURIComponent(project)}`;
+
+  // STEP 1: Generate TCs
+  log('Parsing ' + parsedStories.length + ' User Stories...', 'i');
+  const allTCs = generateTCs(parsedStories);
+  const total = Object.values(allTCs).flat().length;
+  log(`Generated ${total} test cases (${parsedStories.length} suites × 3 per AC)`, 's');
+
+  // STEP 2: Create suites
+  log('Creating ' + parsedStories.length + ' Static Suites...', 'i');
+  for (const us of parsedStories) {
+    try {
+      const r = await fetch(`${base}/_apis/testplan/Plans/${planId}/suites?api-version=7.0`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ suiteType: 'staticTestSuite', name: `${us.id} — ${us.title}`, parentSuite: { id: parentId } })
+      });
+      if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).substring(0,150)}`);
+      const d = await r.json();
+      suiteMap[us.id] = d.id;
+      log(`✅ Suite: ${us.id} — ${us.title} (ID: ${d.id})`, 's');
+    } catch(e) {
+      log(`❌ Suite FAILED ${us.id}: ${e.message}`, 'e');
+      failedCount++;
+    }
+    updateStats(); await delay(200);
+  }
+
+  // STEP 3: Push TCs
+  log(`Pushing ${total} test cases...`, 'i');
+  for (const us of parsedStories) {
+    for (const tc of (allTCs[us.id]||[])) {
+      try {
+        const body = [
+          { op:'add', path:'/fields/System.Title', value: tc.title },
+          { op:'add', path:'/fields/System.Tags', value: `${tc.type}; ${us.id}` },
+          { op:'add', path:'/fields/Microsoft.VSTS.TCM.Steps', value: buildXml(tc.steps, tc.exp) },
+          { op:'add', path:'/fields/System.Description', value: `<b>User Story:</b> ${us.id}<br><b>Type:</b> ${tc.type}` },
+          { op:'add', path:'/fields/Microsoft.VSTS.Common.Priority', value: 2 }
+        ];
+        const r = await fetch(`${base}/_apis/wit/workitems/$Test%20Case?api-version=7.0`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json-patch+json' },
+          body: JSON.stringify(body)
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const d = await r.json();
+        tcIdMap.push({ id: d.id, us_id: us.id, title: tc.title, type: tc.type });
+        createdCount++;
+      } catch(e) { failedCount++; log(`❌ TC failed: ${tc.title.substring(0,40)} — ${e.message}`, 'e'); }
+      updateStats(); await delay(100);
+    }
+  }
+
+  // STEP 4: Link
+  log('Linking TCs to suites...', 'i');
+  for (const us of parsedStories) {
+    const sid = suiteMap[us.id];
+    const ids = tcIdMap.filter(t => t.us_id === us.id);
+    if (!sid || !ids.length) continue;
+    try {
+      const r = await fetch(`${base}/_apis/testplan/Plans/${planId}/Suites/${sid}/TestCase?api-version=7.0`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ids.map(t => ({ workItem: { id: t.id } })))
+      });
+      if (r.ok) { linkedCount += ids.length; log(`✅ Linked ${ids.length} TCs → ${us.id}`, 's'); }
+      else log(`❌ Link failed ${us.id}`, 'e');
+    } catch(e) { log(`❌ Link error ${us.id}: ${e.message}`, 'e'); }
+    await delay(300);
+  }
+
+  log(`🎉 DONE! Created: ${createdCount} | Linked: ${linkedCount} | Failed: ${failedCount}`, 's');
+  renderTree(planId, orgUrl, project);
+  btn.textContent = failedCount === 0 ? `✅ Done — ${createdCount} TCs pushed!` : `⚠️ Done with ${failedCount} errors`;
+  btn.style.background = failedCount === 0 ? 'linear-gradient(135deg,#059669,#047857)' : 'linear-gradient(135deg,#d97706,#b45309)';
+  btn.disabled = false;
+}
+
+function renderTree(planId, orgUrl, project) {
+  const card = document.getElementById('treeCard');
+  card.classList.remove('hidden');
+  let html = `<div class="tree-plan"><span class="tree-plan-name">📋 Test Plan ID: ${planId}</span><span class="tree-plan-id">${parsedStories.length} suites · ${tcIdMap.length} TCs</span></div>`;
+  parsedStories.forEach(us => {
+    const tcs = tcIdMap.filter(t => t.us_id === us.id);
+    html += `<div class="tree-suite"><div class="tree-suite-hdr"><span>📁 ${us.id} — ${us.title}</span><span style="color:var(--text3);font-size:10px">Suite #${suiteMap[us.id]||'—'} · ${tcs.length} TCs</span></div>`;
+    tcs.forEach(tc => {
+      const cls = tc.type==='Positive'?'tp':tc.type==='Negative'?'tn':'te';
+      html += `<div class="tree-tc"><span><span class="tc-badge ${cls}">${tc.type}</span>${tc.title.substring(0,65)}${tc.title.length>65?'...':''}</span><span class="tc-id">#${tc.id}</span></div>`;
+    });
+    html += `</div>`;
+  });
+  document.getElementById('treeView').innerHTML = html;
+  document.getElementById('adoLinkBox').innerHTML = `<a class="ado-link" href="${orgUrl}/${encodeURIComponent(project)}/_testPlans/define?planId=${planId}" target="_blank">🔗 Open Test Plan in Azure DevOps</a>`;
+}
+
+// Drag & drop
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) { document.getElementById('csvFile').files = e.dataTransfer.files; handleFile(document.getElementById('csvFile')); }
+});
+</script>
+</body>
+</html>
