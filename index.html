@@ -117,8 +117,9 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
     <h1>Test Case <em>Auto-Pusher</em></h1>
     <p>Upload your CSV, enter Plan details, click Push — suites and test cases created automatically.</p>
     <div class="how-to">
-      <strong>⚠️ Important: Open this file in the same browser where you're logged in to Azure DevOps!</strong>
-      No PAT needed — it uses your existing ADO session automatically.
+      <strong>📌 How to use:</strong>
+      Open this page in any browser. Enter your ADO PAT token below to authenticate.
+      <br>Get your PAT: <b>ADO → User Settings (top right) → Personal Access Tokens → New Token</b> → Scopes: <b>Test Management (Read & Write)</b> + <b>Work Items (Read & Write)</b>
     </div>
   </div>
 
@@ -142,6 +143,10 @@ body::after{content:'';position:fixed;inset:0;background:radial-gradient(ellipse
         <label>Parent Suite ID</label>
         <input id="parentSuiteId" placeholder="e.g. 205" />
       </div>
+    </div>
+    <div class="field" style="margin-top:12px;">
+      <label>PAT Token (Personal Access Token)</label>
+      <input id="patToken" type="password" placeholder="Paste your ADO PAT here — not saved anywhere" />
     </div>
   </div>
 
@@ -326,10 +331,12 @@ async function startPush() {
   const project = document.getElementById('project').value.trim();
   const planId = document.getElementById('planId').value.trim();
   const parentId = parseInt(document.getElementById('parentSuiteId').value.trim());
+  const pat = document.getElementById('patToken').value.trim();
 
-  if (!orgUrl || !project || !planId || !parentId) {
-    alert('Please fill in all fields!'); return;
+  if (!orgUrl || !project || !planId || !parentId || !pat) {
+    alert('Please fill in all fields including PAT token!'); return;
   }
+  const authHeader = 'Basic ' + btoa(':' + pat);
 
   const btn = document.getElementById('pushBtn');
   btn.disabled = true; btn.textContent = '⏳ Running...';
@@ -352,7 +359,7 @@ async function startPush() {
     try {
       const r = await fetch(`${base}/_apis/testplan/Plans/${planId}/suites?api-version=7.0`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
         body: JSON.stringify({ suiteType: 'staticTestSuite', name: `${us.id} — ${us.title}`, parentSuite: { id: parentId } })
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).substring(0,150)}`);
@@ -380,7 +387,7 @@ async function startPush() {
         ];
         const r = await fetch(`${base}/_apis/wit/workitems/$Test%20Case?api-version=7.0`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json-patch+json' },
+          headers: { 'Content-Type': 'application/json-patch+json', 'Authorization': authHeader },
           body: JSON.stringify(body)
         });
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -401,7 +408,7 @@ async function startPush() {
     try {
       const r = await fetch(`${base}/_apis/testplan/Plans/${planId}/Suites/${sid}/TestCase?api-version=7.0`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': authHeader },
         body: JSON.stringify(ids.map(t => ({ workItem: { id: t.id } })))
       });
       if (r.ok) { linkedCount += ids.length; log(`✅ Linked ${ids.length} TCs → ${us.id}`, 's'); }
