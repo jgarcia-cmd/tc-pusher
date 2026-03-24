@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug Auto-Filer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafaf8; --card: #ffffff; --border: #e8e4df; --border2: #d4cfc9;
+  --accent: #c0392b; --text: #1a1614; --text2: #6b6560; --text3: #b0aba5;
+  --green: #27ae60; --greenbg: #f0faf4; --accentbg: #fdf2f2;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding: 40px 24px; }
+.wrap { max-width: 640px; margin: 0 auto; }
+.hdr { margin-bottom: 28px; }
+.hdr-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--accentbg); border: 1px solid #f5c6c2; border-radius: 20px; padding: 4px 12px; font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 12px; }
+.hdr h1 { font-size: 26px; font-weight: 700; letter-spacing: -.5px; }
+.hdr p { color: var(--text2); font-size: 14px; margin-top: 6px; line-height: 1.6; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.04); }
+.card-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+.card-title::after { content:''; flex:1; height:1px; background:var(--border); }
+.field { margin-bottom: 12px; }
+.field:last-child { margin-bottom: 0; }
+.field label { display:block; font-size:12px; font-weight:600; color:var(--text2); margin-bottom:5px; }
+.field label span { color: var(--accent); }
+.field input, .field textarea { width:100%; padding:10px 14px; background:var(--bg); border:1px solid var(--border2); border-radius:8px; font-size:14px; color:var(--text); font-family:'DM Sans',sans-serif; outline:none; transition:border-color .15s, box-shadow .15s; }
+.field input:focus, .field textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(192,57,43,.08); }
+.field input::placeholder, .field textarea::placeholder { color:var(--text3); }
+.field textarea { resize:vertical; min-height:90px; line-height:1.6; }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.upload-zone { border: 2px dashed var(--border2); border-radius: 10px; padding: 24px; text-align: center; cursor: pointer; position: relative; transition: all .2s; }
+.upload-zone:hover, .upload-zone.over { border-color: var(--accent); background: var(--accentbg); }
+.upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+.upload-zone .upload-icon { font-size: 28px; margin-bottom: 6px; }
+.upload-zone p { font-size: 13px; color: var(--text2); }
+.upload-zone .fname { color: var(--accent); font-weight: 600; font-size: 13px; margin-top: 4px; }
+.preview-img { margin-top: 12px; border-radius: 8px; overflow: hidden; border: 1px solid var(--border2); display: none; }
+.preview-img img { width: 100%; display: block; max-height: 200px; object-fit: cover; }
+.gen-btn { width: 100%; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; margin-top: 4px; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.gen-btn:hover:not(:disabled) { background: #a93226; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(192,57,43,.3); }
+.gen-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.generated-card { background: var(--card); border: 1px solid #a8dfc0; border-radius: 14px; padding: 22px; margin-bottom: 14px; display: none; }
+.gen-field { margin-bottom: 14px; }
+.gen-field:last-child { margin-bottom: 0; }
+.gen-label { font-size: 11px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text3); margin-bottom: 6px; }
+.gen-value { font-size: 14px; color: var(--text); line-height: 1.6; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; white-space: pre-wrap; }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 12px; font-weight: 700; }
+.badge-critical { background: #fdf2f2; color: #c0392b; border: 1px solid #f5c6c2; }
+.badge-high { background: #fef9f0; color: #e67e22; border: 1px solid #fdd9a0; }
+.badge-medium { background: #fffbf0; color: #f39c12; border: 1px solid #fdeaa0; }
+.badge-low { background: #f0faf4; color: #27ae60; border: 1px solid #a8dfc0; }
+.submit-btn { width: 100%; padding: 14px; background: var(--green); color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .2s; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; }
+.submit-btn:hover:not(:disabled) { background: #219a52; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(39,174,96,.3); }
+.submit-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+.result { border-radius: 12px; padding: 18px 20px; margin-top: 14px; display: none; }
+.result.success { background: var(--greenbg); border: 1px solid #a8dfc0; display: block; }
+.result.error { background: var(--accentbg); border: 1px solid #f5c6c2; display: block; }
+.result-title { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.result.success .result-title { color: var(--green); }
+.result.error .result-title { color: var(--accent); }
+.result-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+.result-link { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 8px 14px; background: var(--green); color: #fff; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; }
+.result-link:hover { background: #219a52; }
+.log-box { background: #1a1614; border-radius: 8px; padding: 12px 14px; font-family: 'DM Mono', monospace; font-size: 11px; max-height: 120px; overflow-y: auto; color: #a8a09a; line-height: 1.8; margin-top: 12px; display: none; }
+.log-box .ok { color: #2ecc71; }
+.log-box .err { color: #e74c3c; }
+.thinking { display: none; align-items: center; gap: 10px; padding: 14px 18px; background: #f8f6ff; border: 1px solid #d4c8ff; border-radius: 10px; margin-bottom: 14px; font-size: 13px; color: #6c5ce7; }
+.thinking.show { display: flex; }
+.dot-anim { display: flex; gap: 4px; }
+.dot-anim span { width: 6px; height: 6px; border-radius: 50%; background: #6c5ce7; animation: bounce 1.2s infinite; }
+.dot-anim span:nth-child(2) { animation-delay: .2s; }
+.dot-anim span:nth-child(3) { animation-delay: .4s; }
+@keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div class="hdr-badge">🐛 Bug Auto-Filer</div>
+    <h1>Log a Bug to Azure DevOps</h1>
+    <p>Describe the bug and attach a screenshot — Claude AI generates all the details and pushes to ADO automatically.</p>
+  </div>
+
+  <!-- ADO Config -->
+  <div class="card">
+    <div class="card-title">🔐 ADO Connection</div>
+    <div class="field-row">
+      <div class="field">
+        <label>Organization URL <span>*</span></label>
+        <input id="orgUrl" value="https://dev.azure.com/rskeet" />
+      </div>
+      <div class="field">
+        <label>Project Name <span>*</span></label>
+        <input id="project" value="Sample Agile Project" />
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <label>PAT Token <span>*</span></label>
+        <input id="pat" type="password" placeholder="Paste your ADO PAT here" />
+      </div>
+      <div class="field">
+        <label>Related User Story ID <span>*</span></label>
+        <input id="usId" type="number" placeholder="e.g. 202" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Bug Input -->
+  <div class="card">
+    <div class="card-title">📝 Describe the Bug</div>
+    <div class="field">
+      <label>Brief Description <span>*</span></label>
+      <textarea id="bugDesc" placeholder="e.g. User cannot click the Signup button. Nothing happens when clicked."></textarea>
+    </div>
+    <div class="field">
+      <label>Screenshot / Video (Optional)</label>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="mediaFile" accept="image/*,video/*" onchange="handleFile(this)" />
+        <div class="upload-icon">📸</div>
+        <p>Drop screenshot or video here, or click to browse</p>
+        <div class="fname" id="fileName">No file selected</div>
+      </div>
+      <div class="preview-img" id="previewImg">
+        <img id="previewSrc" src="" alt="Preview" />
+      </div>
+    </div>
+  </div>
+
+  <button class="gen-btn" id="genBtn" onclick="generateBug()">
+    ✨ Generate Bug Details with Claude AI
+  </button>
+
+  <div class="thinking" id="thinking">
+    <div class="dot-anim"><span></span><span></span><span></span></div>
+    Claude AI is analyzing and generating bug details...
+  </div>
+
+  <!-- Generated Preview -->
+  <div class="generated-card" id="generatedCard">
+    <div class="card-title">✅ Review Generated Details</div>
+    <div class="gen-field">
+      <div class="gen-label">Title</div>
+      <div class="gen-value" id="genTitle"></div>
+    </div>
+    <div class="gen-field">
+      <div class="gen-label">Steps to Reproduce</div>
+      <div class="gen-value" id="genSteps"></div>
+    </div>
+    <div class="gen-field">
+      <div class="gen-label">Expected Result</div>
+      <div class="gen-value" id="genExpected"></div>
+    </div>
+    <div class="gen-field">
+      <div class="gen-label">Actual Result</div>
+      <div class="gen-value" id="genActual"></div>
+    </div>
+    <div class="gen-field" style="display:flex;gap:16px;align-items:flex-start;">
+      <div>
+        <div class="gen-label">Severity</div>
+        <div id="genSeverityBadge" style="margin-top:4px;"></div>
+      </div>
+      <div>
+        <div class="gen-label">Priority</div>
+        <div class="gen-value" id="genPriority" style="padding:3px 10px;display:inline-block;margin-top:4px;"></div>
+      </div>
+    </div>
+    <button class="submit-btn" id="submitBtn" onclick="submitBug()">
+      🚀 Log Bug to ADO
+    </button>
+  </div>
+
+  <div class="log-box" id="logBox"></div>
+  <div class="result" id="result">
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-body" id="resultBody"></div>
+  </div>
+</div>
+
+<script>
+let generatedBug = null;
+let attachmentBase64 = null;
+let attachmentName = null;
+let attachmentType = null;
+
+function handleFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('fileName').textContent = file.name;
+  attachmentName = file.name;
+  attachmentType = file.type;
+  const reader = new FileReader();
+  reader.onload = e => {
+    attachmentBase64 = e.target.result.split(',')[1];
+    if (file.type.startsWith('image/')) {
+      document.getElementById('previewSrc').src = e.target.result;
+      document.getElementById('previewImg').style.display = 'block';
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+const zone = document.getElementById('uploadZone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('over'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('over');
+  const f = e.dataTransfer.files[0];
+  if (f) { document.getElementById('mediaFile').files = e.dataTransfer.files; handleFile(document.getElementById('mediaFile')); }
+});
+
+function log(msg, type = '') {
+  const box = document.getElementById('logBox');
+  box.style.display = 'block';
+  const d = document.createElement('div');
+  d.className = type;
+  d.textContent = new Date().toLocaleTimeString('en-US', { hour12: false }) + '  ' + msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+async function generateBug() {
+  const desc = document.getElementById('bugDesc').value.trim();
+  if (!desc) { alert('Please describe the bug first!'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true; btn.textContent = '⏳ Generating...';
+  document.getElementById('thinking').classList.add('show');
+  document.getElementById('generatedCard').style.display = 'none';
+  document.getElementById('result').className = 'result';
+
+  try {
+    const userContent = [];
+    if (attachmentBase64 && attachmentType && attachmentType.startsWith('image/')) {
+      userContent.push({ type: 'image', source: { type: 'base64', media_type: attachmentType, data: attachmentBase64 } });
+    }
+    userContent.push({ type: 'text', text: `Generate a bug report for this issue: "${desc}"${attachmentBase64 && attachmentType && attachmentType.startsWith('image/') ? '\n\nA screenshot has been attached — use it to improve the bug report.' : ''}` });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: `You are a Senior QA Engineer. Generate structured bug report details from a brief description.
+Respond with valid JSON only — no markdown, no explanation, just raw JSON.
+{
+  "title": "Short descriptive bug title (start with 'Verify that' pattern is NOT used here — use plain title like 'User cannot click Signup button')",
+  "steps": ["Step 1: Navigate to...", "Step 2: ...", "Step 3: ...", "Step 4: Observe the result"],
+  "expectedResult": "What should happen",
+  "actualResult": "What actually happened",
+  "severity": "1 - Critical" or "2 - High" or "3 - Medium" or "4 - Low",
+  "priority": 1 or 2 or 3
+}`,
+        messages: [{ role: 'user', content: userContent }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content.filter(c => c.type === 'text').map(c => c.text).join('');
+    generatedBug = JSON.parse(text.replace(/```json|```/g, '').trim());
+
+    document.getElementById('genTitle').textContent = generatedBug.title;
+    document.getElementById('genSteps').textContent = generatedBug.steps.join('\n');
+    document.getElementById('genExpected').textContent = generatedBug.expectedResult;
+    document.getElementById('genActual').textContent = generatedBug.actualResult;
+
+    const sev = generatedBug.severity;
+    const sevClass = sev.startsWith('1') ? 'badge-critical' : sev.startsWith('2') ? 'badge-high' : sev.startsWith('3') ? 'badge-medium' : 'badge-low';
+    document.getElementById('genSeverityBadge').innerHTML = `<span class="badge ${sevClass}">${sev}</span>`;
+    document.getElementById('genPriority').textContent = 'P' + generatedBug.priority;
+    document.getElementById('generatedCard').style.display = 'block';
+
+  } catch (e) {
+    alert('Failed to generate: ' + e.message);
+  } finally {
+    document.getElementById('thinking').classList.remove('show');
+    btn.disabled = false; btn.textContent = '✨ Generate Bug Details with Claude AI';
+  }
+}
+
+async function submitBug() {
+  if (!generatedBug) return;
+  const orgUrl = document.getElementById('orgUrl').value.trim().replace(/\/$/, '');
+  const project = document.getElementById('project').value.trim();
+  const pat = document.getElementById('pat').value.trim();
+  const usId = document.getElementById('usId').value.trim();
+  if (!pat || !usId) { alert('Please fill in PAT Token and User Story ID!'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = '⏳ Logging bug...';
+  document.getElementById('result').className = 'result';
+  document.getElementById('logBox').style.display = 'none';
+  document.getElementById('logBox').innerHTML = '';
+
+  const base = `${orgUrl}/${encodeURIComponent(project)}`;
+  const authHeader = 'Basic ' + btoa(':' + pat);
+
+  try {
+    log('🔍 Getting iteration from User Story #' + usId);
+    const usR = await fetch(`${base}/_apis/wit/workitems/${usId}?api-version=7.0`, { headers: { 'Authorization': authHeader } });
+    if (!usR.ok) throw new Error(`User Story #${usId} not found!`);
+    const usData = await usR.json();
+    const iterationPath = usData.fields['System.IterationPath'];
+    const areaPath = usData.fields['System.AreaPath'];
+    log('✅ Iteration: ' + iterationPath, 'ok');
+
+    let attachmentUrl = null;
+    if (attachmentBase64 && attachmentName) {
+      log('📸 Uploading screenshot...');
+      const binary = atob(attachmentBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const attR = await fetch(`${base}/_apis/wit/attachments?fileName=${encodeURIComponent(attachmentName)}&api-version=7.0`, {
+        method: 'POST',
+        headers: { 'Authorization': authHeader, 'Content-Type': 'application/octet-stream' },
+        body: bytes.buffer
+      });
+      if (attR.ok) { const attData = await attR.json(); attachmentUrl = attData.url; log('✅ Screenshot uploaded!', 'ok'); }
+    }
+
+    const stepsHtml = generatedBug.steps.map(s => `<li>${s}</li>`).join('');
+    const reproHtml = `<b>Steps to Reproduce:</b><ol>${stepsHtml}</ol><b>Expected Result:</b><p>${generatedBug.expectedResult}</p><b>Actual Result:</b><p>${generatedBug.actualResult}</p>`;
+
+    log('📝 Creating bug in ADO...');
+    const body = [
+      { op: 'add', path: '/fields/System.Title', value: generatedBug.title },
+      { op: 'add', path: '/fields/Microsoft.VSTS.TCM.ReproSteps', value: reproHtml },
+      { op: 'add', path: '/fields/Microsoft.VSTS.Common.Priority', value: generatedBug.priority },
+      { op: 'add', path: '/fields/Microsoft.VSTS.Common.Severity', value: generatedBug.severity },
+      { op: 'add', path: '/fields/System.State', value: 'New' },
+      { op: 'add', path: '/fields/System.IterationPath', value: iterationPath },
+      { op: 'add', path: '/fields/System.AreaPath', value: areaPath },
+      { op: 'add', path: '/relations/-', value: { rel: 'System.LinkTypes.Hierarchy-Reverse', url: `${orgUrl}/_apis/wit/workitems/${usId}`, attributes: { comment: `Child of User Story #${usId}` } } }
+    ];
+    if (attachmentUrl) body.push({ op: 'add', path: '/relations/-', value: { rel: 'AttachedFile', url: attachmentUrl, attributes: { comment: 'Bug screenshot' } } });
+
+    const r = await fetch(`${base}/_apis/wit/workitems/$Bug?api-version=7.0`, {
+      method: 'POST',
+      headers: { 'Authorization': authHeader, 'Content-Type': 'application/json-patch+json' },
+      body: JSON.stringify(body)
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).substring(0, 150)}`);
+    const d = await r.json();
+
+    log('✅ Bug #' + d.id + ' logged!', 'ok');
+    log('✅ Linked to User Story #' + usId, 'ok');
+
+    const bugUrl = `${orgUrl}/${encodeURIComponent(project)}/_workitems/edit/${d.id}`;
+    document.getElementById('result').className = 'result success';
+    document.getElementById('resultTitle').innerHTML = `✅ Bug #${d.id} logged successfully!`;
+    document.getElementById('resultBody').innerHTML = `<strong>${generatedBug.title}</strong><br>Severity: ${generatedBug.severity} | Linked to US #${usId} | Iteration: ${iterationPath}<br><a class="result-link" href="${bugUrl}" target="_blank">🔗 Open Bug in ADO</a>`;
+    btn.textContent = '✅ Bug Logged!'; btn.style.background = '#219a52';
+    setTimeout(() => { btn.disabled = false; btn.textContent = '🚀 Log Bug to ADO'; btn.style.background = ''; }, 3000);
+  } catch (e) {
+    log('❌ ' + e.message, 'err');
+    document.getElementById('result').className = 'result error';
+    document.getElementById('resultTitle').innerHTML = `❌ Failed`;
+    document.getElementById('resultBody').textContent = e.message;
+    btn.disabled = false; btn.textContent = '🚀 Log Bug to ADO';
+  }
+}
+</script>
+</body>
+</html>
